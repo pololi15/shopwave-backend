@@ -3,28 +3,27 @@ package com.shopwavefusion.exception;
 import java.time.LocalDateTime;
 
 public class ErrorDetails {
-	
-	private String error;
+
+	private String message;
 	private String details;
 	private LocalDateTime timestamp;
 
 	public ErrorDetails() {
-		// TODO Auto-generated constructor stub
 	}
 
-	public ErrorDetails(String error, String details, LocalDateTime timestamp) {
+	public ErrorDetails(String message, String details, LocalDateTime timestamp) {
 		super();
-		this.error = error;
+		this.message = message;
 		this.details = details;
 		this.timestamp = timestamp;
 	}
 
-	public String getError() {
-		return error;
+	public String getMessage() {
+		return message;
 	}
 
-	public void setError(String error) {
-		this.error = error;
+	public void setMessage(String message) {
+		this.message = message;
 	}
 
 	public String getDetails() {

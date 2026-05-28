@@ -135,21 +135,119 @@ public class ProductServiceImplementation implements ProductService {
 		return "Product deleted Successfully";
 	}
 
-	@Override
+@Override
 	public Product updateProduct(Long productId,Product req) throws ProductException {
 		Product product=findProductById(productId);
-		
-		if(req.getQuantity()!=0) {
-			product.setQuantity(req.getQuantity());
+
+		if(req.getTitle()!=null) {
+			product.setTitle(req.getTitle());
 		}
 		if(req.getDescription()!=null) {
 			product.setDescription(req.getDescription());
 		}
-		
-		
-			
-		
+		if(req.getPrice()!=0) {
+			product.setPrice(req.getPrice());
+		}
+		if(req.getDiscountedPrice()!=0) {
+			product.setDiscountedPrice(req.getDiscountedPrice());
+		}
+		if(req.getDiscountPersent()!=0) {
+			product.setDiscountPersent(req.getDiscountPersent());
+		}
+		if(req.getQuantity()!=0) {
+			product.setQuantity(req.getQuantity());
+		}
+		if(req.getBrand()!=null) {
+			product.setBrand(req.getBrand());
+		}
+		if(req.getColor()!=null) {
+			product.setColor(req.getColor());
+		}
+		if(req.getImageUrl()!=null) {
+			product.setImageUrl(req.getImageUrl());
+		}
+		if(req.getSizes()!=null && !req.getSizes().isEmpty()) {
+			product.setSizes(req.getSizes());
+		}
+
 		return productRepository.save(product);
+	}
+
+	public Product updateProduct(Long productId, CreateProductRequest req) throws ProductException {
+		Product product=findProductById(productId);
+
+		if(req.getTitle()!=null && !req.getTitle().isEmpty()) {
+			product.setTitle(req.getTitle());
+		}
+		if(req.getDescription()!=null) {
+			product.setDescription(req.getDescription());
+		}
+		if(req.getPrice()!=0) {
+			product.setPrice(req.getPrice());
+		}
+		if(req.getDiscountedPrice()!=0) {
+			product.setDiscountedPrice(req.getDiscountedPrice());
+		}
+		if(req.getDiscountPersent()!=0) {
+			product.setDiscountPersent(req.getDiscountPersent());
+		}
+		if(req.getQuantity()!=0) {
+			product.setQuantity(req.getQuantity());
+		}
+		if(req.getBrand()!=null) {
+			product.setBrand(req.getBrand());
+		}
+		if(req.getColor()!=null) {
+			product.setColor(req.getColor());
+		}
+		if(req.getImageUrl()!=null) {
+			product.setImageUrl(req.getImageUrl());
+		}
+		if(req.getSize()!=null && !req.getSize().isEmpty()) {
+			product.setSizes(req.getSize());
+		}
+
+		if(req.getTopLevelCategory()!=null && !req.getTopLevelCategory().isEmpty()) {
+			Category topLevel=categoryRepository.findByName(req.getTopLevelCategory());
+
+			if(topLevel==null) {
+				topLevel=new Category();
+				topLevel.setName(req.getTopLevelCategory());
+				topLevel.setLevel(1);
+				topLevel=categoryRepository.save(topLevel);
+			}
+
+			Category secondLevel=categoryRepository.findByNameAndParant(req.getSecondLevelCategory(),topLevel.getName());
+			if(secondLevel==null && req.getSecondLevelCategory()!=null && !req.getSecondLevelCategory().isEmpty()) {
+				secondLevel=new Category();
+				secondLevel.setName(req.getSecondLevelCategory());
+				secondLevel.setParentCategory(topLevel);
+				secondLevel.setLevel(2);
+				secondLevel=categoryRepository.save(secondLevel);
+			}
+
+			Category thirdLevel=null;
+			if(secondLevel!=null && req.getThirdLevelCategory()!=null && !req.getThirdLevelCategory().isEmpty()) {
+				thirdLevel=categoryRepository.findByNameAndParant(req.getThirdLevelCategory(),secondLevel.getName());
+				if(thirdLevel==null) {
+					thirdLevel=new Category();
+					thirdLevel.setName(req.getThirdLevelCategory());
+					thirdLevel.setParentCategory(secondLevel);
+					thirdLevel.setLevel(3);
+					thirdLevel=categoryRepository.save(thirdLevel);
+				}
+			}
+
+			if(thirdLevel!=null) {
+				product.setCategory(thirdLevel);
+			} else if(secondLevel!=null) {
+				product.setCategory(secondLevel);
+			} else {
+				product.setCategory(topLevel);
+			}
+		}
+
+return productRepository.save(product);
 	}
 
 	@Override

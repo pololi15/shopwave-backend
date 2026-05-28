@@ -17,6 +17,7 @@ import com.shopwavefusion.modal.Product;
 import com.shopwavefusion.request.CreateProductRequest;
 import com.shopwavefusion.response.ApiResponse;
 import com.shopwavefusion.service.ProductService;
+import com.shopwavefusion.service.CategoryService;
 
 @RestController
 @RequestMapping("/admin/products")
@@ -49,7 +50,7 @@ public class AdminProductController {
 	
 	
 	@PutMapping("/{productId}/update")
-	public ResponseEntity<Product> updateProductHandler(@RequestBody Product req,@PathVariable Long productId) throws ProductException{
+	public ResponseEntity<Product> updateProductHandler(@RequestBody CreateProductRequest req,@PathVariable Long productId) throws ProductException{
 		
 		Product updatedProduct=productService.updateProduct(productId, req);
 		
