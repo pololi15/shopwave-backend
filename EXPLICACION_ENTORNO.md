@@ -141,11 +141,13 @@ MySQL Container (mysql:3306)
 
 ### Configuracion de la Base de Datos
 
-El `application.properties` del proyecto usa:
+El backend usa MySQL cuando encuentra variables de entorno de base de datos. Si no estan disponibles, por ejemplo en Render sin un servicio MySQL externo, arranca con H2 en memoria para no fallar en el startup.
+
+En local con Docker, el flujo sigue usando MySQL:
 ```properties
-spring.datasource.url=jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:shopwavefusion}
+spring.datasource.url=jdbc:mysql://mysql:3306/shopwavefusion
 spring.datasource.username=root
-spring.datasource.password=${DB_PASSWORD:root}
+spring.datasource.password=root
 ```
 
 Las variables de entorno en `docker-compose.yml` sobrescriben los valores default.
