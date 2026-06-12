@@ -9,19 +9,25 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.shopwavefusion.exception.OrderException;
+import com.shopwavefusion.exception.ProductException;
 import com.shopwavefusion.modal.Address;
 import com.shopwavefusion.modal.Cart;
 import com.shopwavefusion.modal.CartItem;
 import com.shopwavefusion.modal.Order;
 import com.shopwavefusion.modal.OrderItem;
+import com.shopwavefusion.modal.Product;
 import com.shopwavefusion.modal.User;
 import com.shopwavefusion.repository.AddressRepository;
+import com.shopwavefusion.repository.CartItemRepository;
 import com.shopwavefusion.repository.OrderItemRepository;
 import com.shopwavefusion.repository.OrderRepository;
+import com.shopwavefusion.repository.ProductRepository;
 import com.shopwavefusion.repository.UserRepository;
 import com.shopwavefusion.request.CreateOrderRequest;
 import com.shopwavefusion.user.domain.OrderStatus;
 import com.shopwavefusion.user.domain.PaymentStatus;
+
+import jakarta.transaction.Transactional;
 
 @Service
 public class OrderServiceImplementation implements OrderService {
@@ -32,19 +38,25 @@ public class OrderServiceImplementation implements OrderService {
 	private UserRepository userRepository;
 	private OrderItemService orderItemService;
 	private OrderItemRepository orderItemRepository;
+	private ProductRepository productRepository;
+	private CartItemRepository cartItemRepository;
 	
 	public OrderServiceImplementation(OrderRepository orderRepository,CartService cartService,
 			AddressRepository addressRepository,UserRepository userRepository,
-			OrderItemService orderItemService,OrderItemRepository orderItemRepository) {
+			OrderItemService orderItemService,OrderItemRepository orderItemRepository,
+			ProductRepository productRepository, CartItemRepository cartItemRepository) {
 		this.orderRepository=orderRepository;
 		this.cartService=cartService;
 		this.addressRepository=addressRepository;
 		this.userRepository=userRepository;
 		this.orderItemService=orderItemService;
 		this.orderItemRepository=orderItemRepository;
+		this.productRepository=productRepository;
+		this.cartItemRepository=cartItemRepository;
 	}
 
 	@Override
+	@Transactional
 	public Order createOrder(User user, CreateOrderRequest orderRequest) {
 		Address shippAddress = new Address();
 		shippAddress.setCity(orderRequest.getCity());
@@ -55,16 +67,23 @@ public class OrderServiceImplementation implements OrderService {
 		shippAddress.setStreetAddress(orderRequest.getStreetAddress());
 		shippAddress.setZipCode(orderRequest.getZipCode());
 		shippAddress.setUser(user);
-		Address address= addressRepository.save(shippAddress);
+		Address address = addressRepository.save(shippAddress);
 		user.getAddresses().add(address);
 		userRepository.save(user);
 		
-		Cart cart=cartService.findUserCart(user.getId());
-		List<OrderItem> orderItems=new ArrayList<>();
+		Cart cart = cartService.findUserCart(user.getId());
+		List<OrderItem> orderItems = new ArrayList<>();
 		
-		for(CartItem item: cart.getCartItems()) {
-			OrderItem orderItem=new OrderItem();
-			
+		for (CartItem item : cart.getCartItems()) {
+			Product product = item.getProduct();
+			int requestedQty = item.getQuantity();
+			if (product.getQuantity() < requestedQty) {
+				throw new RuntimeException("Stock insuficiente para: " + product.getTitle());
+			}
+			product.setQuantity(product.getQuantity() - requestedQty);
+			productRepository.save(product);
+
+			OrderItem orderItem = new OrderItem();
 			orderItem.setPrice(item.getPrice());
 			orderItem.setProduct(item.getProduct());
 			orderItem.setQuantity(item.getQuantity());
@@ -72,14 +91,11 @@ public class OrderServiceImplementation implements OrderService {
 			orderItem.setUserId(item.getUserId());
 			orderItem.setDiscountedPrice(item.getDiscountedPrice());
 			
-			
-			OrderItem createdOrderItem=orderItemRepository.save(orderItem);
-			
+			OrderItem createdOrderItem = orderItemRepository.save(orderItem);
 			orderItems.add(createdOrderItem);
 		}
 		
-		
-		Order createdOrder=new Order();
+		Order createdOrder = new Order();
 		createdOrder.setUser(user);
 		createdOrder.setOrderItems(orderItems);
 		createdOrder.setTotalPrice(cart.getTotalPrice());
@@ -96,17 +112,18 @@ public class OrderServiceImplementation implements OrderService {
 		createdOrder.getPaymentDetails().setPaymentMethod(orderRequest.getPaymentMethod());
 		createdOrder.getPaymentDetails().setPaymentId(generatePaymentId());
 		createdOrder.setCreatedAt(LocalDateTime.now());
-	
 		
-		Order savedOrder=orderRepository.save(createdOrder);
+		Order savedOrder = orderRepository.save(createdOrder);
 		
-		for(OrderItem item:orderItems) {
+		for (OrderItem item : orderItems) {
 			item.setOrder(savedOrder);
 			orderItemRepository.save(item);
 		}
+
+		cartItemRepository.deleteAll(cart.getCartItems());
+		cart.getCartItems().clear();
 		
 		return savedOrder;
-		
 	}
 
 	@Override
